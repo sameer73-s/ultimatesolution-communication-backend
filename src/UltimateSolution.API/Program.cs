@@ -9,6 +9,7 @@ using UltimateSolution.Application.DependencyInjection;
 using UltimateSolution.Application.Interfaces;
 using UltimateSolution.Infrastructure.DependencyInjection;
 using UltimateSolution.Infrastructure.Identity;
+using UltimateSolution.Infrastructure.SignalR;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,7 @@ var key = jwtConfiguration["Key"] ?? throw new InvalidOperationException("Jwt:Ke
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSignalR();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services
@@ -36,6 +38,20 @@ builder.Services
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
             ClockSkew = TimeSpan.FromMinutes(1)
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var isChatHubRequest = context.HttpContext.Request.Path.StartsWithSegments("/hubs/chat");
+                if (!string.IsNullOrWhiteSpace(accessToken) && isChatHubRequest)
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
     });
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, ApiAuthorizationMiddlewareResultHandler>();
@@ -47,6 +63,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapOpenApi();
 app.MapControllers();
+app.MapHub<ChatHub>("/hubs/chat");
 
 using (var scope = app.Services.CreateScope())
 {
