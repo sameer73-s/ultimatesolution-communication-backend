@@ -27,10 +27,13 @@ public sealed class AiSummaryApprovalHandlerTests
             "test-summary",
             DateTimeOffset.UtcNow);
         var actionItems = new TestActionItemRepository();
+        var notifications = new TestNotificationRepository();
         var handler = new ApproveMeetingSummaryCommandHandler(
             new TestMeetingRepository(meeting),
             new TestMeetingIntelligenceRepository(summary),
             actionItems,
+            notifications,
+            new TestNotificationRealtimePublisher(),
             new AllowApprovalPolicy(),
             new TestUnitOfWork());
 
@@ -41,6 +44,7 @@ public sealed class AiSummaryApprovalHandlerTests
         var actionItem = Assert.Single(actionItems.Items);
         Assert.Equal(summary.Id, actionItem.MeetingSummaryId);
         Assert.Equal(attendeeUserId, actionItem.AssigneeUserId);
+        Assert.Single(notifications.Items);
     }
 
     [Fact]
@@ -51,10 +55,13 @@ public sealed class AiSummaryApprovalHandlerTests
         meeting.AddParticipant(organizerUserId, MeetingParticipantRole.Organizer, DateTimeOffset.UtcNow);
         var summary = MeetingSummary.CreateDraft(meeting.Id, Guid.NewGuid(), "Review summary", "[]", "[]", null, DateTimeOffset.UtcNow);
         var actionItems = new TestActionItemRepository();
+        var notifications = new TestNotificationRepository();
         var handler = new ApproveMeetingSummaryCommandHandler(
             new TestMeetingRepository(meeting),
             new TestMeetingIntelligenceRepository(summary),
             actionItems,
+            notifications,
+            new TestNotificationRealtimePublisher(),
             new DenyApprovalPolicy(),
             new TestUnitOfWork());
 
@@ -62,6 +69,7 @@ public sealed class AiSummaryApprovalHandlerTests
 
         Assert.Equal(MeetingSummaryStatus.Draft, summary.Status);
         Assert.Empty(actionItems.Items);
+        Assert.Empty(notifications.Items);
     }
 
     private sealed class TestMeetingRepository(Meeting meeting) : IMeetingRepository
@@ -88,6 +96,22 @@ public sealed class AiSummaryApprovalHandlerTests
         public Task<ActionItem?> GetByIdAsync(Guid actionItemId, CancellationToken cancellationToken = default) => Task.FromResult<ActionItem?>(Items.SingleOrDefault(actionItem => actionItem.Id == actionItemId));
         public Task<IReadOnlyList<ActionItem>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ActionItem>>(Items.Where(actionItem => actionItem.AssigneeUserId == userId).ToArray());
         public void AddRange(IEnumerable<ActionItem> actionItems) => Items.AddRange(actionItems);
+    }
+
+    private sealed class TestNotificationRepository : INotificationRepository
+    {
+        public List<UltimateSolution.Domain.Entities.Notifications.Notification> Items { get; } = [];
+        public Task<UltimateSolution.Domain.Entities.Notifications.Notification?> GetByIdAsync(Guid notificationId, CancellationToken cancellationToken = default) => Task.FromResult<UltimateSolution.Domain.Entities.Notifications.Notification?>(Items.SingleOrDefault(notification => notification.Id == notificationId));
+        public Task<IReadOnlyList<UltimateSolution.Domain.Entities.Notifications.Notification>> GetForRecipientAsync(Guid recipientUserId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<UltimateSolution.Domain.Entities.Notifications.Notification>>(Items.Where(notification => notification.RecipientUserId == recipientUserId).ToArray());
+        public void Add(UltimateSolution.Domain.Entities.Notifications.Notification notification) => Items.Add(notification);
+        public void AddRange(IEnumerable<UltimateSolution.Domain.Entities.Notifications.Notification> notifications) => Items.AddRange(notifications);
+    }
+
+    private sealed class TestNotificationRealtimePublisher : INotificationRealtimePublisher
+    {
+        public Task PublishNotificationCreatedAsync(UltimateSolution.Application.Features.Notifications.NotificationDto notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task PublishNotificationReadAsync(UltimateSolution.Application.Features.Notifications.NotificationDto notification, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task PublishActionItemsCreatedAsync(Guid recipientUserId, IReadOnlyCollection<UltimateSolution.Application.Features.Notifications.ActionItemNotificationDto> actionItems, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
     private sealed class TestUnitOfWork : IUnitOfWork

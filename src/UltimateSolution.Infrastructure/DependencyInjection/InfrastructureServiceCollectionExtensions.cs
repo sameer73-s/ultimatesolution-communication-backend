@@ -79,6 +79,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IMeetingRepository, MeetingRepository>();
         services.AddScoped<IMeetingIntelligenceRepository, MeetingIntelligenceRepository>();
         services.AddScoped<IActionItemRepository, ActionItemRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<INotificationRealtimePublisher, SignalRNotificationRealtimePublisher>();
         services.AddSingleton<IMeetingMediaService, JitsiMeetingMediaService>();
         services.AddScoped<IMeetingSummaryApprovalPolicy, OrganizerOrManagerMeetingSummaryApprovalPolicy>();
         if (environment.IsEnvironment("Testing"))
