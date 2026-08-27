@@ -1,4 +1,5 @@
 using UltimateSolution.API.Common.Models;
+using UltimateSolution.Application.Common.Exceptions;
 using UltimateSolution.Domain.Exceptions;
 
 namespace UltimateSolution.API.Middlewares;
@@ -13,17 +14,21 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next)
         {
             await next(context);
         }
+        catch (ApplicationValidationException exception)
+        {
+            await WriteFailureAsync(context, StatusCodes.Status400BadRequest, exception.Message, exception.Errors);
+        }
         catch (DomainValidationException exception)
         {
-            await WriteFailureAsync(context, StatusCodes.Status400BadRequest, exception.Message, exception.ErrorCode);
+            await WriteFailureAsync(context, StatusCodes.Status400BadRequest, exception.Message, [exception.ErrorCode]);
         }
         catch (DomainNotFoundException exception)
         {
-            await WriteFailureAsync(context, StatusCodes.Status404NotFound, exception.Message, exception.ErrorCode);
+            await WriteFailureAsync(context, StatusCodes.Status404NotFound, exception.Message, [exception.ErrorCode]);
         }
         catch (UnauthorizedAccessException)
         {
-            await WriteFailureAsync(context, StatusCodes.Status401Unauthorized, "Authentication is required.", "unauthorized");
+            await WriteFailureAsync(context, StatusCodes.Status401Unauthorized, "Authentication is required.", ["unauthorized"]);
         }
         catch (Exception)
         {
@@ -31,7 +36,7 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next)
                 context,
                 StatusCodes.Status500InternalServerError,
                 "An unexpected error occurred.",
-                "internal_server_error");
+                ["internal_server_error"]);
         }
     }
 
@@ -39,9 +44,9 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next)
         HttpContext context,
         int statusCode,
         string message,
-        string error) 
+        IReadOnlyCollection<string> errors)
     {
         context.Response.StatusCode = statusCode;
-        return context.Response.WriteAsJsonAsync(ApiResponse.Failure<object>(message, error));
+        return context.Response.WriteAsJsonAsync(ApiResponse.Failure<object>(message, [.. errors]));
     }
 }
