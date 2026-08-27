@@ -22,6 +22,10 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next)
         {
             await WriteFailureAsync(context, StatusCodes.Status400BadRequest, exception.Message, [exception.ErrorCode]);
         }
+        catch (DomainForbiddenException exception)
+        {
+            await WriteFailureAsync(context, StatusCodes.Status403Forbidden, exception.Message, [exception.ErrorCode]);
+        }
         catch (DomainNotFoundException exception)
         {
             await WriteFailureAsync(context, StatusCodes.Status404NotFound, exception.Message, [exception.ErrorCode]);

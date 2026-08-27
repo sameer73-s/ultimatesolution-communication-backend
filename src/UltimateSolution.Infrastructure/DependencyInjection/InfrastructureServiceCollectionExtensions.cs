@@ -7,6 +7,9 @@ using UltimateSolution.Application.Features.Identity;
 using UltimateSolution.Application.Interfaces;
 using UltimateSolution.Infrastructure.Identity;
 using UltimateSolution.Infrastructure.Persistence;
+using UltimateSolution.Infrastructure.Persistence.Repositories;
+using UltimateSolution.Infrastructure.Presence;
+using UltimateSolution.Infrastructure.SignalR;
 
 namespace UltimateSolution.Infrastructure.DependencyInjection;
 
@@ -55,6 +58,11 @@ public static class InfrastructureServiceCollectionExtensions
         });
         services.AddScoped<IApplicationDbContext>(provider =>
             provider.GetRequiredService<ApplicationDbContext>());
+        services.AddScoped<IUnitOfWork, EfUnitOfWork>();
+        services.AddScoped<IChatChannelRepository, ChatChannelRepository>();
+        services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
+        services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
+        services.AddScoped<IChatRealtimePublisher, SignalRChatRealtimePublisher>();
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {
@@ -72,6 +80,7 @@ public static class InfrastructureServiceCollectionExtensions
 
         services.AddScoped<JwtTokenService>();
         services.AddScoped<IIdentityService, IdentityService>();
+        services.AddScoped<IUserDirectory, IdentityUserDirectory>();
         services.AddScoped<IIdentitySeeder, IdentitySeeder>();
 
         return services;
