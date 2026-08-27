@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/UltimateSolution.API/UltimateSolution.API.csproj" />
+    <Project Path="src/UltimateSolution.Application/UltimateSolution.Application.csproj" />
+    <Project Path="src/UltimateSolution.Domain/UltimateSolution.Domain.csproj" />
+    <Project Path="src/UltimateSolution.Infrastructure/UltimateSolution.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/UltimateSolution.API.IntegrationTests/UltimateSolution.API.IntegrationTests.csproj" />
+    <Project Path="tests/UltimateSolution.Application.Tests/UltimateSolution.Application.Tests.csproj" />
+  </Folder>
+</Solution>
