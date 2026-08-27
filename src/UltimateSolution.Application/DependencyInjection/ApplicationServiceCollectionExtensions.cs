@@ -1,5 +1,5 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using Microsoft.Extensions.DependencyInjection;
 using UltimateSolution.Application.Common.Behaviors;
 
@@ -11,8 +11,7 @@ public static class ApplicationServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddMediatR(configuration =>
-            configuration.RegisterServicesFromAssembly(typeof(ApplicationServiceCollectionExtensions).Assembly));
+        services.AddMediator();
         services.AddValidatorsFromAssembly(typeof(ApplicationServiceCollectionExtensions).Assembly);
         services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 

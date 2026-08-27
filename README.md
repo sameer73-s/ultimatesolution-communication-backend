@@ -1,6 +1,6 @@
 # Ultimate Solution Communication — Backend
 
-هذا المستودع مخصص لحل **ASP.NET Core** الخاص بمنصة التواصل المؤسسي. سيبنى الحل وفق Clean Architecture: Domain وApplication وInfrastructure وAPI، مع CQRS/MediatR وRepository + Unit of Work وSQL Server/EF Core.
+هذا المستودع مخصص لحل **ASP.NET Core** الخاص بمنصة التواصل المؤسسي. سيبنى الحل وفق Clean Architecture: Domain وApplication وInfrastructure وAPI، مع CQRS/Mediator وRepository + Unit of Work وSQL Server/EF Core.
 
 ## حالة المستودع
 

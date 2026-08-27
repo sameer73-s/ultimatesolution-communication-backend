@@ -1,16 +1,16 @@
 using FluentValidation;
-using MediatR;
+using Mediator;
 using UltimateSolution.Application.Common.Exceptions;
 
 namespace UltimateSolution.Application.Common.Behaviors;
 
 public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators)
     : IPipelineBehavior<TRequest, TResponse>
-    where TRequest : notnull
+    where TRequest : notnull, IMessage
 {
-    public async Task<TResponse> Handle(
+    public async ValueTask<TResponse> Handle(
         TRequest request,
-        RequestHandlerDelegate<TResponse> next,
+        MessageHandlerDelegate<TRequest, TResponse> next,
         CancellationToken cancellationToken)
     {
         var validationContext = new ValidationContext<TRequest>(request);
@@ -28,6 +28,6 @@ public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidat
             throw new ApplicationValidationException(errors);
         }
 
-        return await next(cancellationToken);
+        return await next(request, cancellationToken);
     }
 }
