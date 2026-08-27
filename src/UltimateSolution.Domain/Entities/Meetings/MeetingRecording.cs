@@ -32,6 +32,7 @@ public sealed class MeetingRecording
     public DateTimeOffset StartedAtUtc { get; private set; }
     public DateTimeOffset? StoppedAtUtc { get; private set; }
     public DateTimeOffset? AvailableAtUtc { get; private set; }
+    public ICollection<TranscriptionJob> TranscriptionJobs { get; } = new List<TranscriptionJob>();
 
     public void Stop(RecordingStatus status, DateTimeOffset stoppedAtUtc, DateTimeOffset? availableAtUtc)
     {
