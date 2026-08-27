@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using UltimateSolution.Application.Features.Identity;
 using UltimateSolution.Application.Interfaces;
+using UltimateSolution.Infrastructure.ExternalServices.Meetings;
 using UltimateSolution.Infrastructure.Identity;
 using UltimateSolution.Infrastructure.Persistence;
 using UltimateSolution.Infrastructure.Persistence.Repositories;
@@ -39,6 +40,14 @@ public static class InfrastructureServiceCollectionExtensions
             .Validate(options => options.RefreshTokenDays is > 0 and <= 30, "Jwt:RefreshTokenDays must be between 1 and 30.")
             .ValidateOnStart();
 
+        services.AddOptions<JitsiMeetingMediaOptions>()
+            .Bind(configuration.GetSection(JitsiMeetingMediaOptions.SectionName))
+            .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out _), "MeetingMedia:BaseUrl must be an absolute URL.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.AppId), "MeetingMedia:AppId must be configured.")
+            .Validate(options => options.ApiSecret.Length >= 32, "MeetingMedia:ApiSecret must be at least 32 characters.")
+            .Validate(options => options.JoinUrlLifetimeMinutes is > 0 and <= 60, "MeetingMedia:JoinUrlLifetimeMinutes must be between 1 and 60.")
+            .ValidateOnStart();
+
         var useInMemoryDatabase = environment.IsEnvironment("Testing")
             || configuration.GetValue<bool>("Persistence:UseInMemory");
         var inMemoryDatabaseName = configuration["Persistence:InMemoryDatabaseName"]
@@ -63,6 +72,8 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
         services.AddScoped<IChatRealtimePublisher, SignalRChatRealtimePublisher>();
+        services.AddScoped<IMeetingRepository, MeetingRepository>();
+        services.AddSingleton<IMeetingMediaService, JitsiMeetingMediaService>();
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

@@ -4,8 +4,15 @@ using UltimateSolution.Domain.Exceptions;
 
 namespace UltimateSolution.API.Middlewares;
 
-public sealed class ExceptionHandlingMiddleware(RequestDelegate next)
+public sealed class ExceptionHandlingMiddleware(
+    RequestDelegate next,
+    ILogger<ExceptionHandlingMiddleware> logger)
 {
+    private static readonly Action<ILogger, string, string, Exception?> LogUnhandledException =
+        LoggerMessage.Define<string, string>(
+            LogLevel.Error,
+            new EventId(1, nameof(LogUnhandledException)),
+            "Unhandled exception while processing {RequestMethod} {RequestPath}.");
     public async Task InvokeAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -34,8 +41,9 @@ public sealed class ExceptionHandlingMiddleware(RequestDelegate next)
         {
             await WriteFailureAsync(context, StatusCodes.Status401Unauthorized, "Authentication is required.", ["unauthorized"]);
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            LogUnhandledException(logger, context.Request.Method, context.Request.Path, exception);
             await WriteFailureAsync(
                 context,
                 StatusCodes.Status500InternalServerError,
