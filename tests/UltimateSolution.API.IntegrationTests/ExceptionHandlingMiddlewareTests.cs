@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging.Abstractions;
 using UltimateSolution.API.Middlewares;
 using UltimateSolution.Domain.Exceptions;
 
@@ -12,8 +13,9 @@ public sealed class ExceptionHandlingMiddlewareTests
     {
         var context = new DefaultHttpContext();
         context.Response.Body = new MemoryStream();
-        var middleware = new ExceptionHandlingMiddleware(_ =>
-            throw new DomainValidationException("The request is invalid."));
+        var middleware = new ExceptionHandlingMiddleware(
+            _ => throw new DomainValidationException("The request is invalid."),
+            NullLogger<ExceptionHandlingMiddleware>.Instance);
 
         await middleware.InvokeAsync(context);
 
