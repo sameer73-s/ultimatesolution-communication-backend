@@ -31,6 +31,9 @@ public sealed class Meeting
     public DateTimeOffset? EndedAtUtc { get; private set; }
     public ICollection<MeetingParticipant> Participants { get; } = new List<MeetingParticipant>();
     public ICollection<MeetingRecording> Recordings { get; } = new List<MeetingRecording>();
+    public ICollection<TranscriptionJob> TranscriptionJobs { get; } = new List<TranscriptionJob>();
+    public ICollection<MeetingSummary> Summaries { get; } = new List<MeetingSummary>();
+    public ICollection<ActionItem> ActionItems { get; } = new List<ActionItem>();
 
     public static Meeting Schedule(string title, string? agenda, Guid organizerUserId, DateTimeOffset scheduledStartUtc, DateTimeOffset scheduledEndUtc)
     {

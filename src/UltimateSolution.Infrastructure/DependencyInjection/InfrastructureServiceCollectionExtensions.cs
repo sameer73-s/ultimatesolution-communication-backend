@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using UltimateSolution.Application.Features.Identity;
 using UltimateSolution.Application.Interfaces;
+using UltimateSolution.Infrastructure.ExternalServices.Ai;
 using UltimateSolution.Infrastructure.ExternalServices.Meetings;
 using UltimateSolution.Infrastructure.Identity;
 using UltimateSolution.Infrastructure.Persistence;
@@ -48,6 +49,9 @@ public static class InfrastructureServiceCollectionExtensions
             .Validate(options => options.JoinUrlLifetimeMinutes is > 0 and <= 60, "MeetingMedia:JoinUrlLifetimeMinutes must be between 1 and 60.")
             .ValidateOnStart();
 
+        services.AddOptions<ExternalMeetingIntelligenceOptions>()
+            .Bind(configuration.GetSection(ExternalMeetingIntelligenceOptions.SectionName));
+
         var useInMemoryDatabase = environment.IsEnvironment("Testing")
             || configuration.GetValue<bool>("Persistence:UseInMemory");
         var inMemoryDatabaseName = configuration["Persistence:InMemoryDatabaseName"]
@@ -73,7 +77,22 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
         services.AddScoped<IChatRealtimePublisher, SignalRChatRealtimePublisher>();
         services.AddScoped<IMeetingRepository, MeetingRepository>();
+        services.AddScoped<IMeetingIntelligenceRepository, MeetingIntelligenceRepository>();
+        services.AddScoped<IActionItemRepository, ActionItemRepository>();
         services.AddSingleton<IMeetingMediaService, JitsiMeetingMediaService>();
+        services.AddScoped<IMeetingSummaryApprovalPolicy, OrganizerOrManagerMeetingSummaryApprovalPolicy>();
+        if (environment.IsEnvironment("Testing"))
+        {
+            services.AddSingleton<TestMeetingIntelligenceService>();
+            services.AddScoped<ITranscriptionService>(provider => provider.GetRequiredService<TestMeetingIntelligenceService>());
+            services.AddScoped<ISummaryService>(provider => provider.GetRequiredService<TestMeetingIntelligenceService>());
+        }
+        else
+        {
+            services.AddHttpClient<ExternalMeetingIntelligenceService>();
+            services.AddScoped<ITranscriptionService>(provider => provider.GetRequiredService<ExternalMeetingIntelligenceService>());
+            services.AddScoped<ISummaryService>(provider => provider.GetRequiredService<ExternalMeetingIntelligenceService>());
+        }
 
         services.AddIdentityCore<ApplicationUser>(options =>
             {

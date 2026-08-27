@@ -28,6 +28,14 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<MeetingRecording> MeetingRecordings => Set<MeetingRecording>();
 
+    public DbSet<TranscriptionJob> TranscriptionJobs => Set<TranscriptionJob>();
+
+    public DbSet<TranscriptionSegment> TranscriptionSegments => Set<TranscriptionSegment>();
+
+    public DbSet<MeetingSummary> MeetingSummaries => Set<MeetingSummary>();
+
+    public DbSet<ActionItem> ActionItems => Set<ActionItem>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -149,6 +157,79 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(recording => recording.RequestedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<TranscriptionJob>(entityBuilder =>
+        {
+            entityBuilder.ToTable("TranscriptionJobs");
+            entityBuilder.HasKey(job => job.Id);
+            entityBuilder.Property(job => job.MediaRecordingReference).HasMaxLength(200).IsRequired();
+            entityBuilder.Property(job => job.ExternalJobReference).HasMaxLength(200);
+            entityBuilder.Property(job => job.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
+            entityBuilder.Property(job => job.FailureCode).HasMaxLength(100);
+            entityBuilder.HasIndex(job => new { job.MeetingId, job.RequestedAtUtc });
+            entityBuilder.HasIndex(job => new { job.RecordingId, job.Status });
+            entityBuilder.HasOne<MeetingRecording>()
+                .WithMany(recording => recording.TranscriptionJobs)
+                .HasForeignKey(job => job.RecordingId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<TranscriptionSegment>(entityBuilder =>
+        {
+            entityBuilder.ToTable("TranscriptionSegments");
+            entityBuilder.HasKey(segment => segment.Id);
+            entityBuilder.Property(segment => segment.Text).HasMaxLength(4000).IsRequired();
+            entityBuilder.Property(segment => segment.SpeakerLabel).HasMaxLength(120);
+            entityBuilder.HasIndex(segment => new { segment.TranscriptionJobId, segment.SequenceNumber }).IsUnique();
+            entityBuilder.HasOne<TranscriptionJob>()
+                .WithMany(job => job.Segments)
+                .HasForeignKey(segment => segment.TranscriptionJobId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MeetingSummary>(entityBuilder =>
+        {
+            entityBuilder.ToTable("MeetingSummaries");
+            entityBuilder.HasKey(summary => summary.Id);
+            entityBuilder.Property(summary => summary.Content).HasMaxLength(16000).IsRequired();
+            entityBuilder.Property(summary => summary.DecisionsJson).HasMaxLength(16000).IsRequired();
+            entityBuilder.Property(summary => summary.ProposedActionItemsJson).HasMaxLength(32000).IsRequired();
+            entityBuilder.Property(summary => summary.ExternalSummaryReference).HasMaxLength(200);
+            entityBuilder.Property(summary => summary.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
+            entityBuilder.HasIndex(summary => new { summary.MeetingId, summary.GeneratedAtUtc });
+            entityBuilder.HasIndex(summary => summary.TranscriptionJobId).IsUnique();
+            entityBuilder.HasOne<Meeting>()
+                .WithMany(meeting => meeting.Summaries)
+                .HasForeignKey(summary => summary.MeetingId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entityBuilder.HasOne<TranscriptionJob>()
+                .WithMany()
+                .HasForeignKey(summary => summary.TranscriptionJobId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(summary => summary.ApprovedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<ActionItem>(entityBuilder =>
+        {
+            entityBuilder.ToTable("ActionItems");
+            entityBuilder.HasKey(actionItem => actionItem.Id);
+            entityBuilder.Property(actionItem => actionItem.Title).HasMaxLength(400).IsRequired();
+            entityBuilder.Property(actionItem => actionItem.Description).HasMaxLength(4000);
+            entityBuilder.Property(actionItem => actionItem.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
+            entityBuilder.HasIndex(actionItem => new { actionItem.AssigneeUserId, actionItem.Status, actionItem.DueAtUtc });
+            entityBuilder.HasIndex(actionItem => new { actionItem.MeetingSummaryId, actionItem.CreatedAtUtc });
+            entityBuilder.HasOne<MeetingSummary>()
+                .WithMany(summary => summary.ActionItems)
+                .HasForeignKey(actionItem => actionItem.MeetingSummaryId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(actionItem => actionItem.AssigneeUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }
