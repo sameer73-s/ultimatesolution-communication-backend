@@ -1,6 +1,9 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization.Policy;
 using Microsoft.IdentityModel.Tokens;
+using UltimateSolution.API.Common.Authorization;
 using UltimateSolution.API.Middlewares;
 using UltimateSolution.Application.DependencyInjection;
 using UltimateSolution.Application.Interfaces;
@@ -35,6 +38,7 @@ builder.Services
         };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddSingleton<IAuthorizationMiddlewareResultHandler, ApiAuthorizationMiddlewareResultHandler>();
 
 var app = builder.Build();
 

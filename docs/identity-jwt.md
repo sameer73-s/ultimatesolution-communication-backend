@@ -14,7 +14,7 @@
 
 تحتوي Infrastructure على `ApplicationUser` وASP.NET Identity و`JwtTokenService` و`IdentityService`. تنشأ أدوار `Admin` و`Manager` و`Employee` عند الإقلاع عبر `IdentitySeeder`، مع توليد معرّف `Guid` صريح لكل دور. تسجل عملية التسجيل الموظف الجديد بدور `Employee`، بينما يصدر تسجيل الدخول زوجًا من Access Token وRefresh Token. تخزن Refresh Tokens بصيغة SHA-256 hash، وتنفذ عملية Refresh تدويرًا يلغي الرمز السابق قبل إصدار زوج جديد.
 
-تستهلك API الأوامر فقط عبر `ISender` وتفعل JWT Bearer Authentication. المسارات هي `POST /api/v1/auth/register` و`POST /api/v1/auth/login` و`POST /api/v1/auth/refresh` و`GET /api/v1/profile`. ويوجد `GET /api/v1/management/ping` كنموذج حماية بالأدوار `Admin` أو `Manager`.
+تستهلك API الأوامر فقط عبر `ISender` وتفعل JWT Bearer Authentication. المسارات هي `POST /api/v1/auth/register` و`POST /api/v1/auth/login` و`POST /api/v1/auth/refresh` و`GET /api/v1/profile`. ويوجد `GET /api/v1/management/ping` كنموذج حماية بالأدوار `Admin` أو `Manager`. يعيد معالج التفويض في API غلاف الاستجابة الموحد لحالتي `401 Unauthorized` و`403 Forbidden` بدل جسم استجابة فارغ.
 
 ## إدارة الأسرار
 
@@ -34,4 +34,4 @@
 
 ## معايير تحقق التنفيذ
 
-يجب أن يمر البناء، وأن تغطي اختبارات API التسجيل والدخول وتجديد الرمز ونقطة الملف الشخصي وحالة كلمة المرور غير المطابقة، وأن يبقى كل API response الناجح أو الذي تعالجه طبقة الاستثناءات ضمن الغلاف الموحد. تعمل اختبارات التكامل في بيئة `Testing` فقط، فتستخدم `EnsureCreatedAsync` بدلًا من migrations ولا تتصل بـSQL Server المحلي.
+يجب أن يمر البناء، وأن تغطي اختبارات API التسجيل والدخول وتجديد الرمز ونقطة الملف الشخصي وحالة كلمة المرور غير المطابقة، وحالتي الرفض `401` و`403`، وأن يبقى كل API response الناجح أو المرفوض ضمن الغلاف الموحد. تعمل اختبارات التكامل في بيئة `Testing` فقط، فتستخدم `EnsureCreatedAsync` بدلًا من migrations ولا تتصل بـSQL Server المحلي.

@@ -29,6 +29,5 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.HasIndex(token => new { token.UserId, token.ExpiresAtUtc });
         });
 
-        builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
     }
 }

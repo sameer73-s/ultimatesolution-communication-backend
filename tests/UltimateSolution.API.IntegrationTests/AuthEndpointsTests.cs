@@ -11,6 +11,16 @@ public sealed class AuthEndpointsTests(CustomWebApplicationFactory factory)
     public async Task RegisterLoginRefreshAndProfileFollowTheUnifiedContract()
     {
         using var client = factory.CreateClient();
+
+        using var unauthenticatedProfileResponse = await client.GetAsync("/api/v1/profile");
+        Assert.Equal(HttpStatusCode.Unauthorized, unauthenticatedProfileResponse.StatusCode);
+        using var unauthenticatedProfileBody = JsonDocument.Parse(
+            await unauthenticatedProfileResponse.Content.ReadAsStringAsync());
+        Assert.False(unauthenticatedProfileBody.RootElement.GetProperty("success").GetBoolean());
+        Assert.Contains(
+            "unauthorized",
+            unauthenticatedProfileBody.RootElement.GetProperty("errors").EnumerateArray().Select(error => error.GetString()));
+
         var email = $"employee.{Guid.NewGuid():N}@ultimatesolution.test";
         const string password = "StrongPassword!2026";
 
@@ -46,6 +56,14 @@ public sealed class AuthEndpointsTests(CustomWebApplicationFactory factory)
         using var profileBody = JsonDocument.Parse(await profileResponse.Content.ReadAsStringAsync());
         Assert.True(profileBody.RootElement.GetProperty("success").GetBoolean());
         Assert.Equal(email, profileBody.RootElement.GetProperty("data").GetProperty("email").GetString());
+
+        using var managementResponse = await client.GetAsync("/api/v1/management/ping");
+        Assert.Equal(HttpStatusCode.Forbidden, managementResponse.StatusCode);
+        using var managementBody = JsonDocument.Parse(await managementResponse.Content.ReadAsStringAsync());
+        Assert.False(managementBody.RootElement.GetProperty("success").GetBoolean());
+        Assert.Contains(
+            "forbidden",
+            managementBody.RootElement.GetProperty("errors").EnumerateArray().Select(error => error.GetString()));
     }
 
     [Fact]
