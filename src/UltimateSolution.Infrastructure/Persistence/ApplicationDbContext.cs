@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using UltimateSolution.Application.Interfaces;
 using UltimateSolution.Domain.Entities.Chat;
 using UltimateSolution.Domain.Entities.Meetings;
+using UltimateSolution.Domain.Entities.Notifications;
 using UltimateSolution.Domain.Enums;
 using UltimateSolution.Infrastructure.Identity;
 
@@ -35,6 +36,8 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
     public DbSet<MeetingSummary> MeetingSummaries => Set<MeetingSummary>();
 
     public DbSet<ActionItem> ActionItems => Set<ActionItem>();
+
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -230,6 +233,22 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(actionItem => actionItem.AssigneeUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Notification>(entityBuilder =>
+        {
+            entityBuilder.ToTable("Notifications");
+            entityBuilder.HasKey(notification => notification.Id);
+            entityBuilder.Property(notification => notification.Type).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entityBuilder.Property(notification => notification.SourceType).HasMaxLength(100).IsRequired();
+            entityBuilder.Property(notification => notification.Title).HasMaxLength(200).IsRequired();
+            entityBuilder.Property(notification => notification.Body).HasMaxLength(2000);
+            entityBuilder.HasIndex(notification => new { notification.RecipientUserId, notification.ReadAtUtc, notification.CreatedAtUtc });
+            entityBuilder.HasIndex(notification => new { notification.SourceType, notification.SourceId });
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(notification => notification.RecipientUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }

@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Mediator;
 using UltimateSolution.Application.Common.Results;
+using UltimateSolution.Application.Features.Notifications;
 using UltimateSolution.Application.Interfaces;
 using UltimateSolution.Domain.Entities.Meetings;
+using UltimateSolution.Domain.Entities.Notifications;
 using UltimateSolution.Domain.Enums;
 using UltimateSolution.Domain.Exceptions;
 
@@ -75,6 +77,8 @@ public sealed class GetMeetingTranscriptionQueryHandler(
 public sealed class GenerateMeetingSummaryCommandHandler(
     IMeetingRepository meetingRepository,
     IMeetingIntelligenceRepository intelligenceRepository,
+    INotificationRepository notificationRepository,
+    INotificationRealtimePublisher notificationRealtimePublisher,
     ISummaryService summaryService,
     IUnitOfWork unitOfWork) : IRequestHandler<GenerateMeetingSummaryCommand, MeetingSummaryDto>
 {
@@ -112,7 +116,23 @@ public sealed class GenerateMeetingSummaryCommandHandler(
             generatedSummary.Value.ExternalSummaryReference,
             DateTimeOffset.UtcNow);
         intelligenceRepository.AddMeetingSummary(summary);
+        var notifications = meeting.Participants
+            .Select(participant => Notification.Create(
+                participant.UserId,
+                NotificationType.MeetingSummaryReady,
+                nameof(MeetingSummary),
+                summary.Id,
+                "Meeting summary ready for review",
+                $"A draft summary is available for {meeting.Title}.",
+                DateTimeOffset.UtcNow))
+            .ToArray();
+        notificationRepository.AddRange(notifications);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        foreach (var notification in notifications)
+        {
+            await notificationRealtimePublisher.PublishNotificationCreatedAsync(NotificationMapper.Map(notification), cancellationToken);
+        }
+
         return AiSummaryMapper.Map(summary);
     }
 }
@@ -134,6 +154,8 @@ public sealed class ApproveMeetingSummaryCommandHandler(
     IMeetingRepository meetingRepository,
     IMeetingIntelligenceRepository intelligenceRepository,
     IActionItemRepository actionItemRepository,
+    INotificationRepository notificationRepository,
+    INotificationRealtimePublisher notificationRealtimePublisher,
     IMeetingSummaryApprovalPolicy approvalPolicy,
     IUnitOfWork unitOfWork) : IRequestHandler<ApproveMeetingSummaryCommand, MeetingSummaryDto>
 {
@@ -171,7 +193,32 @@ public sealed class ApproveMeetingSummaryCommandHandler(
                 DateTimeOffset.UtcNow))
             .ToArray();
         actionItemRepository.AddRange(actionItems);
+        var notifications = actionItems
+            .Where(actionItem => actionItem.AssigneeUserId.HasValue)
+            .Select(actionItem => Notification.Create(
+                actionItem.AssigneeUserId!.Value,
+                NotificationType.ActionItemAssigned,
+                nameof(ActionItem),
+                actionItem.Id,
+                "New action item assigned",
+                actionItem.Title,
+                DateTimeOffset.UtcNow))
+            .ToArray();
+        notificationRepository.AddRange(notifications);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        foreach (var notification in notifications)
+        {
+            await notificationRealtimePublisher.PublishNotificationCreatedAsync(NotificationMapper.Map(notification), cancellationToken);
+        }
+
+        foreach (var actionItemsForRecipient in actionItems.Where(actionItem => actionItem.AssigneeUserId.HasValue).GroupBy(actionItem => actionItem.AssigneeUserId!.Value))
+        {
+            var actionItemNotifications = actionItemsForRecipient
+                .Select(actionItem => new ActionItemNotificationDto(actionItem.Id, actionItem.MeetingId, actionItem.Title, actionItem.DueAtUtc))
+                .ToArray();
+            await notificationRealtimePublisher.PublishActionItemsCreatedAsync(actionItemsForRecipient.Key, actionItemNotifications, cancellationToken);
+        }
+
         return AiSummaryMapper.Map(summary);
     }
 }

@@ -43,8 +43,9 @@ builder.Services
             OnMessageReceived = context =>
             {
                 var accessToken = context.Request.Query["access_token"];
-                var isChatHubRequest = context.HttpContext.Request.Path.StartsWithSegments("/hubs/chat");
-                if (!string.IsNullOrWhiteSpace(accessToken) && isChatHubRequest)
+                var isRealtimeHubRequest = context.HttpContext.Request.Path.StartsWithSegments("/hubs/chat")
+                    || context.HttpContext.Request.Path.StartsWithSegments("/hubs/notifications");
+                if (!string.IsNullOrWhiteSpace(accessToken) && isRealtimeHubRequest)
                 {
                     context.Token = accessToken;
                 }
@@ -64,6 +65,7 @@ app.UseAuthorization();
 app.MapOpenApi();
 app.MapControllers();
 app.MapHub<ChatHub>("/hubs/chat");
+app.MapHub<NotificationsHub>("/hubs/notifications");
 
 using (var scope = app.Services.CreateScope())
 {
