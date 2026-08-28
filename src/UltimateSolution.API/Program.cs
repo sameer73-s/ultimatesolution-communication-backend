@@ -10,6 +10,7 @@ using UltimateSolution.Application.Interfaces;
 using UltimateSolution.Infrastructure.DependencyInjection;
 using UltimateSolution.Infrastructure.Identity;
 using UltimateSolution.Infrastructure.SignalR;
+using UltimateSolution.API.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,7 +20,11 @@ var audience = jwtConfiguration["Audience"] ?? throw new InvalidOperationExcepti
 var key = jwtConfiguration["Key"] ?? throw new InvalidOperationException("Jwt:Key must be configured.");
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
+    options.AddOperationTransformer<BearerSecuritySchemeTransformer>();
+});
 builder.Services.AddSignalR();
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);

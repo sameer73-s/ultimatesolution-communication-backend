@@ -14,7 +14,7 @@
 
 تحتوي Infrastructure على `ApplicationUser` وASP.NET Identity و`JwtTokenService` و`IdentityService`. تنشأ أدوار `Admin` و`Manager` و`Employee` عند الإقلاع عبر `IdentitySeeder`، مع توليد معرّف `Guid` صريح لكل دور. تسجل عملية التسجيل الموظف الجديد بدور `Employee`، بينما يصدر تسجيل الدخول زوجًا من Access Token وRefresh Token. تخزن Refresh Tokens بصيغة SHA-256 hash، وتنفذ عملية Refresh تدويرًا يلغي الرمز السابق قبل إصدار زوج جديد.
 
-تستهلك API الأوامر فقط عبر `IMediator` وتفعل JWT Bearer Authentication. المسارات هي `POST /api/v1/auth/register` و`POST /api/v1/auth/login` و`POST /api/v1/auth/refresh` و`GET /api/v1/profile`. ويوجد `GET /api/v1/management/ping` كنموذج حماية بالأدوار `Admin` أو `Manager`. يعيد معالج التفويض في API غلاف الاستجابة الموحد لحالتي `401 Unauthorized` و`403 Forbidden` بدل جسم استجابة فارغ.
+تستهلك API الأوامر فقط عبر `IMediator` وتفعل JWT Bearer Authentication. المسارات هي `POST /api/v1/auth/register` و`POST /api/v1/auth/login` و`POST /api/v1/auth/refresh` و`GET /api/v1/profile`. ويوجد `GET /api/v1/management/ping` كنموذج حماية بالأدوار `Admin` أو `Manager`. يعيد معالج التفويض في API غلاف الاستجابة الموحد لحالتي `401 Unauthorized` و`403 Forbidden` بدل جسم استجابة فارغ. ويعلن `/openapi/v1.json` الآن مخطط JWT Bearer ومتطلبات `security` للعمليات التي تحمل `[Authorize]`، مع استثناء نقاط `AuthController` العامة و`HealthController`؛ تفاصيل القرار المنجز موثقة في `docs/adr/ADR-005-openapi-jwt-security-documentation.md`.
 
 ## قرار الوسيط وترخيصه
 
