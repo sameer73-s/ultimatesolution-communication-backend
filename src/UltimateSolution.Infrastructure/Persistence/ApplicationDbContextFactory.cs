@@ -8,10 +8,10 @@ public sealed class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Ap
     public ApplicationDbContext CreateDbContext(string[] args)
     {
         var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
-            ?? "Server=localhost,1433;Database=UltimateSolutionCommunication;User Id=sa;Password=ReplaceForLocalDevelopment;TrustServerCertificate=True;Encrypt=False";
+            ?? "Host=localhost;Port=5432;Database=UltimateSolutionCommunication;Username=postgres;Password=ReplaceForLocalDevelopment";
 
         var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlServer(connectionString)
+            .UseNpgsql(connectionString)
             .Options;
 
         return new ApplicationDbContext(options);

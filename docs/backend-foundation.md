@@ -12,7 +12,7 @@
 
 يتضمن الحل طبقات `Domain` و`Application` و`Infrastructure` و`API` ومشروعي اختبارات. يحافظ اتجاه الاعتماد على أن API تعتمد على Application وInfrastructure، وأن Infrastructure تعتمد على Application وDomain، وأن Application تعتمد على Domain فقط.
 
-يحتوي Application على `IApplicationDbContext` كعقد قاعدة البيانات. لا تستخدم Application أو Controllers أو Hubs `ApplicationDbContext` مباشرة. يسجل Infrastructure التنفيذ المستند إلى EF Core وSQL Server داخل `AddInfrastructure`. ويقيم `ApplicationDbContextFactory` داخل Infrastructure لإنشاء Migrations وقت التصميم، فلا يحتاج مشروع API إلى اعتماد أدوات EF Core الخاصة بالتصميم.
+يحتوي Application على `IApplicationDbContext` كعقد قاعدة البيانات. لا تستخدم Application أو Controllers أو Hubs `ApplicationDbContext` مباشرة. يسجل Infrastructure التنفيذ المستند إلى EF Core داخل `AddInfrastructure`. ويقيم `ApplicationDbContextFactory` داخل Infrastructure لإنشاء Migrations وقت التصميم، فلا يحتاج مشروع API إلى اعتماد أدوات EF Core الخاصة بالتصميم. استُبدل مزود SQL Server بـ PostgreSQL في WBS 3.7؛ راجع [ADR-006](adr/ADR-006-postgresql-migration.md) و[توثيق الترحيل](database-provider-migration.md).
 
 تضمن `ExceptionHandlingMiddleware` غلاف أخطاء موحدًا، ويثبت `HealthController` شكل الاستجابة الناجحة. يمتلك المشروع نقطة OpenAPI على `/openapi/v1.json` لتكون لاحقًا مصدر العقد الحي لعميل Flutter.
 
@@ -24,7 +24,7 @@
 
 | الاعتمادية | الموضع | التبرير |
 |---|---|---|
-| `Microsoft.EntityFrameworkCore.SqlServer` | Infrastructure | مزود SQL Server المعتمد لإنشاء DbContext وMigrations بنهج Code-First. |
+| `Npgsql.EntityFrameworkCore.PostgreSQL` | Infrastructure | مزود PostgreSQL المعتمد لإنشاء DbContext وMigrations بنهج Code-First بعد WBS 3.7. كان WBS 3.1 يستخدم SQL Server؛ أُلغي ذلك الاعتماد. |
 | `Microsoft.EntityFrameworkCore.Design` | Infrastructure | أدوات التصميم ومولد EF Core Migrations فقط؛ لا تنشر مع Runtime. |
 | `Microsoft.AspNetCore.OpenApi` | API | إخراج العقد الحي OpenAPI المعتمد لمستهلكي API. |
 | `Microsoft.AspNetCore.Mvc.Testing` | API Integration Tests | اختبار HTTP لتغليف الاستجابات في التطبيق المستضاف. |
@@ -40,4 +40,4 @@ dotnet test UltimateSolution.Communication.slnx
 dotnet run --project src/UltimateSolution.API
 ```
 
-لا توجد قاعدة بيانات مطلوبة لتشغيل Health endpoint أو الاختبارات الحالية. يتطلب تطبيق migrations اتصال SQL Server محليًا صحيحًا.
+لا توجد قاعدة بيانات مطلوبة لتشغيل Health endpoint أو الاختبارات الحالية. يتطلب تطبيق migrations اتصال PostgreSQL محليًا صحيحًا.
