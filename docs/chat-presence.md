@@ -48,7 +48,7 @@
 
 ## البيانات والترحيل
 
-أضيف migration باسم `AddChatAndPresence` للجداول `ChatChannels` و`ChannelMembers` و`ChatMessages` و`MessageReadStates` مع الفهارس اللازمة للقناة والعضوية والرسائل والقراءة. لا يُخزن الحضور العابر في SQL Server؛ أما القناة والرسالة وحالة القراءة فتبقى دائمة وتستخدم repositories و`IUnitOfWork` فقط من Application.
+أضيفت جداول `ChatChannels` و`ChannelMembers` و`ChatMessages` و`MessageReadStates` مع الفهارس اللازمة للقناة والعضوية والرسائل والقراءة، وهي جزء من الهجرة الأولية `InitialPostgreSql` بعد WBS 3.7. لا يُخزن الحضور العابر في PostgreSQL؛ أما القناة والرسالة وحالة القراءة فتبقى دائمة وتستخدم repositories و`IUnitOfWork` فقط من Application.
 
 ## الاختبارات والتحقق
 

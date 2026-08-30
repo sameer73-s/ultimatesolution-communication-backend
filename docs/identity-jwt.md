@@ -33,10 +33,10 @@
 | `FluentValidation.DependencyInjectionExtensions` | Application | التحقق من مدخلات المصادقة عبر التسجيل في `AddApplication()`. |
 | `Microsoft.AspNetCore.Identity.EntityFrameworkCore` | Infrastructure | مخازن ASP.NET Identity وEntity Framework Core. |
 | `Microsoft.AspNetCore.Authentication.JwtBearer` | API | التحقق من JWT على حدود HTTP فقط. |
-| `Microsoft.EntityFrameworkCore.InMemory` | Infrastructure وAPI Integration Tests | قاعدة بيانات ذاكرة للاختبارات فقط؛ تختارها Infrastructure عند بيئة `Testing` باسم فريد لكل مضيف، لذلك لا يجتمع موفر SQL Server وموفر InMemory في حاوية DI واحدة. |
+| `Microsoft.EntityFrameworkCore.InMemory` | Infrastructure وAPI Integration Tests | قاعدة بيانات ذاكرة للاختبارات فقط؛ تختارها Infrastructure عند بيئة `Testing` باسم فريد لكل مضيف، لذلك لا يجتمع موفر PostgreSQL وموفر InMemory في حاوية DI واحدة. |
 | `Microsoft.Extensions.Hosting.Abstractions` | Infrastructure | قراءة بيئة الاستضافة لاختيار موفر بيانات الاختبار دون ربط Application أو API بقاعدة الاختبار. |
 | `Microsoft.EntityFrameworkCore.Design` | API (PrivateAssets) | تمكين فحص وتوليد migrations عبر مشروع بدء التشغيل، ولا يُنشر كاعتماد تشغيلي. |
 
 ## معايير تحقق التنفيذ
 
-يجب أن يمر البناء، وأن تغطي اختبارات API التسجيل والدخول وتجديد الرمز ونقطة الملف الشخصي وحالة كلمة المرور غير المطابقة، وحالتي الرفض `401` و`403`، وأن يبقى كل API response الناجح أو المرفوض ضمن الغلاف الموحد. تعمل اختبارات التكامل في بيئة `Testing` فقط، فتستخدم `EnsureCreatedAsync` بدلًا من migrations ولا تتصل بـSQL Server المحلي.
+يجب أن يمر البناء، وأن تغطي اختبارات API التسجيل والدخول وتجديد الرمز ونقطة الملف الشخصي وحالة كلمة المرور غير المطابقة، وحالتي الرفض `401` و`403`، وأن يبقى كل API response الناجح أو المرفوض ضمن الغلاف الموحد. تعمل اختبارات التكامل في بيئة `Testing` فقط، فتستخدم `EnsureCreatedAsync` بدلًا من migrations ولا تتصل بـPostgreSQL المحلي.

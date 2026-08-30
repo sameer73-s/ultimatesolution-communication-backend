@@ -1,10 +1,10 @@
 # Ultimate Solution Communication — Backend
 
-هذا المستودع مخصص لحل **ASP.NET Core** الخاص بمنصة التواصل المؤسسي. سيبنى الحل وفق Clean Architecture: Domain وApplication وInfrastructure وAPI، مع CQRS/Mediator وRepository + Unit of Work وSQL Server/EF Core.
+هذا المستودع مخصص لحل **ASP.NET Core** الخاص بمنصة التواصل المؤسسي. يُبنى الحل وفق Clean Architecture: Domain وApplication وInfrastructure وAPI، مع CQRS/Mediator وRepository + Unit of Work وPostgreSQL/EF Core.
 
 ## حالة المستودع
 
-لا يحتوي فرع `main` على تنفيذ Feature قبل دمجه عبر Pull Request معتمد. يبدأ العمل الحالي في الفرع `feature/3.1-backend-foundation` وفق حزمة WBS `3.1`.
+لا يُدفع مباشرة إلى `main`؛ كل خطوة WBS تُسلَّم عبر Pull Request. الخطوة الحالية هي `feature/3.7-postgresql-migration` وفق حزمة WBS `3.7`. مزود البيانات التشغيلي هو PostgreSQL عبر Npgsql، كما يوثق [ADR-006](docs/adr/ADR-006-postgresql-migration.md).
 
 ## قواعد غير قابلة للتجاوز
 
