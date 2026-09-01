@@ -84,7 +84,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.HasOne<Project>()
                 .WithMany()
                 .HasForeignKey(channel => channel.ProjectId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
             entityBuilder.HasMany(channel => channel.Members)
                 .WithOne()
                 .HasForeignKey(member => member.ChannelId)
@@ -263,7 +263,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.HasOne<ChatMessage>()
                 .WithMany()
                 .HasForeignKey(actionItem => actionItem.SourceMessageId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict);
             entityBuilder.HasOne<Project>()
                 .WithMany()
                 .HasForeignKey(actionItem => actionItem.ProjectId)

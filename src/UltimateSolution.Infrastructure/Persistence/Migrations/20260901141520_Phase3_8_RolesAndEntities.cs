@@ -314,7 +314,7 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                 column: "SourceMessageId",
                 principalTable: "ChatMessages",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_ActionItems_Meetings_MeetingId",
@@ -337,7 +337,7 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                 column: "ProjectId",
                 principalTable: "Projects",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
         }
 
         /// <inheritdoc />
