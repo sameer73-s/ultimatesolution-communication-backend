@@ -4,5 +4,6 @@ public enum ChatChannelType
 {
     Direct = 1,
     Group = 2,
-    Channel = 3
+    Channel = 3,
+    Project = 4
 }

@@ -5,6 +5,8 @@ using UltimateSolution.Application.Interfaces;
 using UltimateSolution.Domain.Entities.Chat;
 using UltimateSolution.Domain.Entities.Meetings;
 using UltimateSolution.Domain.Entities.Notifications;
+using UltimateSolution.Domain.Entities.Projects;
+using UltimateSolution.Domain.Entities.Ess;
 using UltimateSolution.Domain.Enums;
 using UltimateSolution.Infrastructure.Identity;
 
@@ -37,7 +39,17 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
 
     public DbSet<ActionItem> ActionItems => Set<ActionItem>();
 
+    public DbSet<ActionItemHistory> ActionItemHistories => Set<ActionItemHistory>();
+
     public DbSet<Notification> Notifications => Set<Notification>();
+
+    public DbSet<Project> Projects => Set<Project>();
+
+    public DbSet<ProjectMember> ProjectMembers => Set<ProjectMember>();
+
+    public DbSet<MessageDeletionRequest> MessageDeletionRequests => Set<MessageDeletionRequest>();
+
+    public DbSet<EssAccessRequest> EssAccessRequests => Set<EssAccessRequest>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -64,10 +76,15 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.Property(channel => channel.Name).HasMaxLength(120).IsRequired();
             entityBuilder.Property(channel => channel.Type).HasConversion<string>().HasMaxLength(16).IsRequired();
             entityBuilder.HasIndex(channel => new { channel.CreatedByUserId, channel.IsArchived });
+            entityBuilder.HasIndex(channel => channel.ProjectId);
             entityBuilder.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(channel => channel.CreatedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+            entityBuilder.HasOne<Project>()
+                .WithMany()
+                .HasForeignKey(channel => channel.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
             entityBuilder.HasMany(channel => channel.Members)
                 .WithOne()
                 .HasForeignKey(member => member.ChannelId)
@@ -223,9 +240,14 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.HasKey(actionItem => actionItem.Id);
             entityBuilder.Property(actionItem => actionItem.Title).HasMaxLength(400).IsRequired();
             entityBuilder.Property(actionItem => actionItem.Description).HasMaxLength(4000);
-            entityBuilder.Property(actionItem => actionItem.Status).HasConversion<string>().HasMaxLength(16).IsRequired();
+            entityBuilder.Property(actionItem => actionItem.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entityBuilder.Property(actionItem => actionItem.SourceType).HasConversion<string>().HasMaxLength(16).IsRequired();
+            entityBuilder.Property(actionItem => actionItem.Priority).HasConversion<string>().HasMaxLength(16).IsRequired();
             entityBuilder.HasIndex(actionItem => new { actionItem.AssigneeUserId, actionItem.Status, actionItem.DueAtUtc });
             entityBuilder.HasIndex(actionItem => new { actionItem.MeetingSummaryId, actionItem.CreatedAtUtc });
+            entityBuilder.HasIndex(actionItem => actionItem.SourceMessageId);
+            entityBuilder.HasIndex(actionItem => actionItem.ProjectId);
+            
             entityBuilder.HasOne<MeetingSummary>()
                 .WithMany(summary => summary.ActionItems)
                 .HasForeignKey(actionItem => actionItem.MeetingSummaryId)
@@ -233,6 +255,105 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.HasOne<ApplicationUser>()
                 .WithMany()
                 .HasForeignKey(actionItem => actionItem.AssigneeUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(actionItem => actionItem.ReviewerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entityBuilder.HasOne<ChatMessage>()
+                .WithMany()
+                .HasForeignKey(actionItem => actionItem.SourceMessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entityBuilder.HasOne<Project>()
+                .WithMany()
+                .HasForeignKey(actionItem => actionItem.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<ActionItemHistory>(entityBuilder =>
+        {
+            entityBuilder.ToTable("ActionItemHistories");
+            entityBuilder.HasKey(history => history.Id);
+            entityBuilder.Property(history => history.OldStatus).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entityBuilder.Property(history => history.NewStatus).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entityBuilder.Property(history => history.Comment).HasMaxLength(4000);
+            entityBuilder.HasIndex(history => history.ActionItemId);
+            entityBuilder.HasOne<ActionItem>()
+                .WithMany()
+                .HasForeignKey(history => history.ActionItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(history => history.ChangedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<Project>(entityBuilder =>
+        {
+            entityBuilder.ToTable("Projects");
+            entityBuilder.HasKey(project => project.Id);
+            entityBuilder.Property(project => project.Name).HasMaxLength(120).IsRequired();
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(project => project.OwnerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<ProjectMember>(entityBuilder =>
+        {
+            entityBuilder.ToTable("ProjectMembers");
+            entityBuilder.HasKey(member => new { member.ProjectId, member.UserId });
+            entityBuilder.Property(member => member.Role).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(member => member.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entityBuilder.HasOne(member => member.Project)
+                .WithMany(project => project.Members)
+                .HasForeignKey(member => member.ProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MessageDeletionRequest>(entityBuilder =>
+        {
+            entityBuilder.ToTable("MessageDeletionRequests");
+            entityBuilder.HasKey(request => request.Id);
+            entityBuilder.Property(request => request.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entityBuilder.Property(request => request.RestoreReason).HasMaxLength(1000);
+            entityBuilder.HasIndex(request => request.MessageId).IsUnique();
+            entityBuilder.HasOne<ChatMessage>()
+                .WithMany()
+                .HasForeignKey(request => request.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(request => request.RequestedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(request => request.SecondPartyUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<EssAccessRequest>(entityBuilder =>
+        {
+            entityBuilder.ToTable("EssAccessRequests");
+            entityBuilder.HasKey(request => request.Id);
+            entityBuilder.Property(request => request.RequestedServiceType).HasMaxLength(200).IsRequired();
+            entityBuilder.Property(request => request.EssServiceReference).HasMaxLength(200);
+            entityBuilder.Property(request => request.Status).HasConversion<string>().HasMaxLength(32).IsRequired();
+            entityBuilder.HasIndex(request => request.EmployeeUserId);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(request => request.EmployeeUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(request => request.ManagerUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            entityBuilder.HasOne<ApplicationUser>()
+                .WithMany()
+                .HasForeignKey(request => request.HrAssigneeUserId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
