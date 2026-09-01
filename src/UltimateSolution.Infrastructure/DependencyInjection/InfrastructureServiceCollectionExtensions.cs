@@ -12,6 +12,7 @@ using UltimateSolution.Infrastructure.Persistence;
 using UltimateSolution.Infrastructure.Persistence.Repositories;
 using UltimateSolution.Infrastructure.Presence;
 using UltimateSolution.Infrastructure.SignalR;
+using UltimateSolution.Infrastructure.Security;
 
 namespace UltimateSolution.Infrastructure.DependencyInjection;
 
@@ -73,6 +74,7 @@ public static class InfrastructureServiceCollectionExtensions
             provider.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<IUnitOfWork, EfUnitOfWork>();
         services.AddScoped<IChatChannelRepository, ChatChannelRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IChatMessageRepository, ChatMessageRepository>();
         services.AddSingleton<IPresenceTracker, InMemoryPresenceTracker>();
         services.AddScoped<IChatRealtimePublisher, SignalRChatRealtimePublisher>();
@@ -83,6 +85,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<INotificationRealtimePublisher, SignalRNotificationRealtimePublisher>();
         services.AddSingleton<IMeetingMediaService, JitsiMeetingMediaService>();
         services.AddScoped<IMeetingSummaryApprovalPolicy, OrganizerOrManagerMeetingSummaryApprovalPolicy>();
+        services.AddScoped<IActionItemAuthorizationService, ActionItemAuthorizationService>();
         if (environment.IsEnvironment("Testing"))
         {
             services.AddSingleton<TestMeetingIntelligenceService>();

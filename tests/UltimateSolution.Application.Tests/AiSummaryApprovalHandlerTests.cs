@@ -95,6 +95,8 @@ public sealed class AiSummaryApprovalHandlerTests
         public List<ActionItem> Items { get; } = [];
         public Task<ActionItem?> GetByIdAsync(Guid actionItemId, CancellationToken cancellationToken = default) => Task.FromResult<ActionItem?>(Items.SingleOrDefault(actionItem => actionItem.Id == actionItemId));
         public Task<IReadOnlyList<ActionItem>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ActionItem>>(Items.Where(actionItem => actionItem.AssigneeUserId == userId).ToArray());
+        public Task<bool> ExistsForSourceMessageAsync(Guid messageId, CancellationToken cancellationToken = default) => Task.FromResult(Items.Any(actionItem => actionItem.SourceMessageId == messageId));
+        public void Add(ActionItem actionItem) => Items.Add(actionItem);
         public void AddRange(IEnumerable<ActionItem> actionItems) => Items.AddRange(actionItems);
     }
 

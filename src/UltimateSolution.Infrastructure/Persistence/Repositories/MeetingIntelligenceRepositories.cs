@@ -48,5 +48,10 @@ public sealed class ActionItemRepository(ApplicationDbContext context) : IAction
             .ThenBy(actionItem => actionItem.DueAtUtc)
             .ToListAsync(cancellationToken);
 
+    public Task<bool> ExistsForSourceMessageAsync(Guid messageId, CancellationToken cancellationToken = default) =>
+        context.ActionItems.AnyAsync(actionItem => actionItem.SourceMessageId == messageId, cancellationToken);
+
+    public void Add(ActionItem actionItem) => context.ActionItems.Add(actionItem);
+
     public void AddRange(IEnumerable<ActionItem> actionItems) => context.ActionItems.AddRange(actionItems);
 }

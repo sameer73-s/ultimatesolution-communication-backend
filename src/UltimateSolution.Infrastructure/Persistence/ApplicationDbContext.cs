@@ -245,7 +245,7 @@ public sealed class ApplicationDbContext(DbContextOptions<ApplicationDbContext> 
             entityBuilder.Property(actionItem => actionItem.Priority).HasConversion<string>().HasMaxLength(16).IsRequired();
             entityBuilder.HasIndex(actionItem => new { actionItem.AssigneeUserId, actionItem.Status, actionItem.DueAtUtc });
             entityBuilder.HasIndex(actionItem => new { actionItem.MeetingSummaryId, actionItem.CreatedAtUtc });
-            entityBuilder.HasIndex(actionItem => actionItem.SourceMessageId);
+            entityBuilder.HasIndex(actionItem => actionItem.SourceMessageId).IsUnique();
             entityBuilder.HasIndex(actionItem => actionItem.ProjectId);
             
             entityBuilder.HasOne<MeetingSummary>()
