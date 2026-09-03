@@ -1,3 +1,7 @@
+#pragma warning disable CA1707
+#pragma warning disable CA2201
+#pragma warning disable CA1822
+#pragma warning disable CA1852
 using UltimateSolution.Application.Common.Results;
 using UltimateSolution.Application.Features.ActionItems.Commands.ConvertMessageToActionItem;
 using UltimateSolution.Application.Interfaces;
@@ -25,6 +29,10 @@ public class ConvertMessageToActionItemHandlerTests
         public Task<IReadOnlyList<ChatChannel>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ChatChannel>>(new List<ChatChannel>());
         public void Add(ChatChannel channel) { }
         public void Update(ChatChannel channel) { }
+        public Task<ChatChannel?> GetDirectChannelAsync(Guid user1Id, Guid user2Id, CancellationToken cancellationToken = default) => Task.FromResult<ChatChannel?>(null);
+        public Task<ChannelMember?> GetMembershipAsync(Guid channelId, Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<ChannelMember?>(null);
+        public Task<MessageReadState?> GetReadStateAsync(Guid channelId, Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<MessageReadState?>(null);
+        public void AddReadState(MessageReadState readState) { }
     }
 
     private sealed class TestActionItemRepository : IActionItemRepository
@@ -76,8 +84,6 @@ public class ConvertMessageToActionItemHandlerTests
         var authorizationService = new TestActionItemAuthorizationService();
         var notificationService = new TestOutboundNotificationService();
         var projectRepository = new TestProjectRepository();
-
-        // Create an IUnitOfWork that throws a fake DbUpdateException
         var unitOfWork = new FakeFailingUnitOfWork();
 
         var handler = new ConvertMessageToActionItemHandler(
@@ -91,8 +97,8 @@ public class ConvertMessageToActionItemHandlerTests
         );
 
         var request = new ConvertMessageToActionItemCommand(Guid.NewGuid(), Guid.NewGuid(), "Task", Guid.NewGuid(), ActionItemPriority.Medium, null);
-        messageRepository.Message = ChatMessage.Create(Guid.NewGuid(), request.UserId, "Hello");
-        channelRepository.Channel = ChatChannel.Create(Guid.NewGuid(), "Channel", ChatChannelType.Group);
+        messageRepository.Message = ChatMessage.Create(Guid.NewGuid(), request.UserId, "Hello", DateTimeOffset.UtcNow);
+        channelRepository.Channel = ChatChannel.Create(ChatChannelType.Group, "Channel", Guid.NewGuid(), DateTimeOffset.UtcNow);
 
         // Act
         var result = await handler.Handle(request, CancellationToken.None);
@@ -106,17 +112,17 @@ public class ConvertMessageToActionItemHandlerTests
     {
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            var innerEx = new Exception("IX_ActionItems_SourceMessageId");
-            // By dynamically creating an exception with the required name, we can bypass not having EF Core reference
-            // But the easiest way is to use a class named DbUpdateException in our test context, or just mock it.
-            // Wait, the handler does ex.GetType().Name == "DbUpdateException". So we must name it DbUpdateException!
-            throw new DbUpdateException("DB Error", innerEx);
+            var innerEx = new Exception("23505: duplicate key value violates unique constraint 'IX_ActionItems_SourceMessageId'");
+            throw new Microsoft.EntityFrameworkCore.DbUpdateException("DB Error", innerEx);
         }
     }
 }
 
-// Defining a class named DbUpdateException in the global or same namespace will satisfy ex.GetType().Name == "DbUpdateException"
-public class DbUpdateException : Exception
-{
-    public DbUpdateException(string message, Exception innerException) : base(message, innerException) { }
-}
+
+
+
+
+
+
+
+

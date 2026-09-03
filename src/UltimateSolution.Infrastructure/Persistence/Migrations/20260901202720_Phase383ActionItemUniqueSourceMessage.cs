@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -71,7 +71,7 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                 column: "SourceMessageId",
                 principalTable: "ChatMessages",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_ChatChannels_Projects_ProjectId",
@@ -79,7 +79,7 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                 column: "ProjectId",
                 principalTable: "Projects",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                onDelete: ReferentialAction.Restrict);
         }
     }
 }
