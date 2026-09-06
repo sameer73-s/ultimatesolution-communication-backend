@@ -69,14 +69,9 @@ public class ConvertMessageToActionItemHandlerTests
         }
     }
 
-    // A custom exception to simulate EF Core DbUpdateException
-    private class DummyDbUpdateException : Exception
-    {
-        public DummyDbUpdateException(string message, Exception innerException) : base(message, innerException) { }
-    }
-
     [Fact]
-    public async Task Handle_WhenConcurrencyCausesConstraintViolation_ShouldCatchExceptionAndReturnConflict()
+    // Explicitly a Unit Test simulating EF Core DbUpdateException handling (Not a real PostgreSQL Integration Test)
+    public async Task Handle_WhenConcurrencyExceptionSimulated_ShouldCatchExceptionAndReturnConflict()
     {
         // Arrange
         var messageRepository = new TestChatMessageRepository();
@@ -86,7 +81,7 @@ public class ConvertMessageToActionItemHandlerTests
         var notificationService = new TestOutboundNotificationService();
         var projectRepository = new TestProjectRepository();
 
-        // Create an IUnitOfWork that throws a fake DbUpdateException
+        // Create an IUnitOfWork that throws a simulated DbUpdateException using the real EF Core exception class
         var unitOfWork = new FakeFailingUnitOfWork();
 
         var handler = new ConvertMessageToActionItemHandler(
