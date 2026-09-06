@@ -16,7 +16,11 @@ public enum MeetingSummaryStatus
 
 public enum ActionItemStatus
 {
-    Open = 1,
+    Open = 1, // Aka New
     InProgress = 2,
-    Completed = 3
+    WaitingInformation = 3,
+    InReview = 4,
+    Rejected = 5,
+    Completed = 6,
+    Cancelled = 7
 }

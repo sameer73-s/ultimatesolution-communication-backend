@@ -24,6 +24,8 @@ public sealed class ChatChannel
 
     public ChatChannelType Type { get; private set; }
 
+    public Guid? ProjectId { get; private set; }
+
     public Guid CreatedByUserId { get; private set; }
 
     public DateTimeOffset CreatedAtUtc { get; private set; }
