@@ -198,12 +198,17 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                         .HasMaxLength(120)
                         .HasColumnType("character varying(120)");
 
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ProjectId");
 
                     b.HasIndex("CreatedByUserId", "IsArchived");
 
@@ -245,6 +250,48 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                     b.ToTable("ChatMessages", (string)null);
                 });
 
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Chat.MessageDeletionRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequestedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("RespondedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RestoreReason")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("SecondPartyUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MessageId")
+                        .IsUnique();
+
+                    b.HasIndex("RequestedByUserId");
+
+                    b.HasIndex("SecondPartyUserId");
+
+                    b.ToTable("MessageDeletionRequests", (string)null);
+                });
+
             modelBuilder.Entity("UltimateSolution.Domain.Entities.Chat.MessageReadState", b =>
                 {
                     b.Property<Guid>("ChannelId")
@@ -266,6 +313,55 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                     b.ToTable("MessageReadStates", (string)null);
                 });
 
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Ess.EssAccessRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ClosedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("EmployeeUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("EssServiceReference")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("HrAssigneeUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ManagerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RequestedServiceType")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeUserId");
+
+                    b.HasIndex("HrAssigneeUserId");
+
+                    b.HasIndex("ManagerUserId");
+
+                    b.ToTable("EssAccessRequests", (string)null);
+                });
+
             modelBuilder.Entity("UltimateSolution.Domain.Entities.Meetings.ActionItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -285,16 +381,35 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                     b.Property<DateTimeOffset?>("DueAtUtc")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid>("MeetingId")
+                    b.Property<Guid?>("MeetingId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("MeetingSummaryId")
+                    b.Property<Guid?>("MeetingSummaryId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Status")
+                    b.Property<string>("Priority")
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
+
+                    b.Property<Guid?>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ReviewerUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("SourceMessageId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -308,11 +423,56 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("MeetingId");
 
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("ReviewerUserId");
+
+                    b.HasIndex("SourceMessageId")
+                        .IsUnique();
+
                     b.HasIndex("MeetingSummaryId", "CreatedAtUtc");
 
                     b.HasIndex("AssigneeUserId", "Status", "DueAtUtc");
 
                     b.ToTable("ActionItems", (string)null);
+                });
+
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Meetings.ActionItemHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActionItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("ChangedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("ChangedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("OldStatus")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActionItemId");
+
+                    b.HasIndex("ChangedByUserId");
+
+                    b.ToTable("ActionItemHistories", (string)null);
                 });
 
             modelBuilder.Entity("UltimateSolution.Domain.Entities.Meetings.Meeting", b =>
@@ -615,6 +775,50 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                     b.ToTable("Notifications", (string)null);
                 });
 
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Projects.Project", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<Guid>("OwnerUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OwnerUserId");
+
+                    b.ToTable("Projects", (string)null);
+                });
+
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Projects.ProjectMember", b =>
+                {
+                    b.Property<Guid>("ProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.HasKey("ProjectId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ProjectMembers", (string)null);
+                });
+
             modelBuilder.Entity("UltimateSolution.Infrastructure.Identity.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -791,6 +995,11 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                         .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("UltimateSolution.Domain.Entities.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("UltimateSolution.Domain.Entities.Chat.ChatMessage", b =>
@@ -808,11 +1017,51 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Chat.MessageDeletionRequest", b =>
+                {
+                    b.HasOne("UltimateSolution.Domain.Entities.Chat.ChatMessage", null)
+                        .WithMany()
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("RequestedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("SecondPartyUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
             modelBuilder.Entity("UltimateSolution.Domain.Entities.Chat.MessageReadState", b =>
                 {
                     b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Ess.EssAccessRequest", b =>
+                {
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("EmployeeUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("HrAssigneeUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ManagerUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -826,14 +1075,41 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
 
                     b.HasOne("UltimateSolution.Domain.Entities.Meetings.Meeting", null)
                         .WithMany("ActionItems")
-                        .HasForeignKey("MeetingId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("MeetingId");
 
                     b.HasOne("UltimateSolution.Domain.Entities.Meetings.MeetingSummary", null)
                         .WithMany("ActionItems")
                         .HasForeignKey("MeetingSummaryId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("UltimateSolution.Domain.Entities.Projects.Project", null)
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewerUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("UltimateSolution.Domain.Entities.Chat.ChatMessage", null)
+                        .WithMany()
+                        .HasForeignKey("SourceMessageId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Meetings.ActionItemHistory", b =>
+                {
+                    b.HasOne("UltimateSolution.Domain.Entities.Meetings.ActionItem", null)
+                        .WithMany()
+                        .HasForeignKey("ActionItemId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("ChangedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -929,6 +1205,32 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Projects.Project", b =>
+                {
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Projects.ProjectMember", b =>
+                {
+                    b.HasOne("UltimateSolution.Domain.Entities.Projects.Project", "Project")
+                        .WithMany("Members")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("UltimateSolution.Infrastructure.Identity.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Project");
+                });
+
             modelBuilder.Entity("UltimateSolution.Domain.Entities.Chat.ChatChannel", b =>
                 {
                     b.Navigation("Members");
@@ -962,6 +1264,11 @@ namespace UltimateSolution.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("UltimateSolution.Domain.Entities.Meetings.TranscriptionJob", b =>
                 {
                     b.Navigation("Segments");
+                });
+
+            modelBuilder.Entity("UltimateSolution.Domain.Entities.Projects.Project", b =>
+                {
+                    b.Navigation("Members");
                 });
 #pragma warning restore 612, 618
         }

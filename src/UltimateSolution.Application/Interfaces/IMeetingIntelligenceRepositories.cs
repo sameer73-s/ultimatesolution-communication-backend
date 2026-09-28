@@ -16,5 +16,7 @@ public interface IActionItemRepository
 {
     Task<ActionItem?> GetByIdAsync(Guid actionItemId, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<ActionItem>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default);
+    Task<bool> ExistsForSourceMessageAsync(Guid messageId, CancellationToken cancellationToken = default);
+    void Add(ActionItem actionItem);
     void AddRange(IEnumerable<ActionItem> actionItems);
 }

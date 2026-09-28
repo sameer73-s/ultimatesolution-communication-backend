@@ -238,25 +238,47 @@ public sealed class ActionItem
     {
     }
 
-    private ActionItem(Guid meetingId, Guid meetingSummaryId, string title, string? description, Guid? assigneeUserId, DateTimeOffset? dueAtUtc, DateTimeOffset createdAtUtc)
+    private ActionItem(
+        ActionItemSourceType sourceType,
+        Guid? meetingId,
+        Guid? meetingSummaryId,
+        Guid? sourceMessageId,
+        Guid? projectId,
+        string title,
+        string? description,
+        Guid? assigneeUserId,
+        Guid? reviewerUserId,
+        ActionItemPriority priority,
+        DateTimeOffset? dueAtUtc,
+        DateTimeOffset createdAtUtc)
     {
         Id = Guid.NewGuid();
+        SourceType = sourceType;
         MeetingId = meetingId;
         MeetingSummaryId = meetingSummaryId;
+        SourceMessageId = sourceMessageId;
+        ProjectId = projectId;
         Title = title;
         Description = description;
         AssigneeUserId = assigneeUserId;
+        ReviewerUserId = reviewerUserId;
+        Priority = priority;
         DueAtUtc = dueAtUtc;
         CreatedAtUtc = createdAtUtc;
         Status = ActionItemStatus.Open;
     }
 
     public Guid Id { get; private set; }
-    public Guid MeetingId { get; private set; }
-    public Guid MeetingSummaryId { get; private set; }
+    public ActionItemSourceType SourceType { get; private set; }
+    public Guid? MeetingId { get; private set; }
+    public Guid? MeetingSummaryId { get; private set; }
+    public Guid? SourceMessageId { get; private set; }
+    public Guid? ProjectId { get; private set; }
     public string Title { get; private set; } = string.Empty;
     public string? Description { get; private set; }
     public Guid? AssigneeUserId { get; private set; }
+    public Guid? ReviewerUserId { get; private set; }
+    public ActionItemPriority Priority { get; private set; }
     public DateTimeOffset? DueAtUtc { get; private set; }
     public ActionItemStatus Status { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
@@ -269,20 +291,24 @@ public sealed class ActionItem
             throw new DomainValidationException("A meeting and approved summary are required for an action item.");
         }
 
-        if (string.IsNullOrWhiteSpace(title) || title.Trim().Length > 400)
-        {
-            throw new DomainValidationException("Action item title is required and cannot exceed 400 characters.");
-        }
+        ValidateCommon(title, description);
 
-        if (description?.Length > 4000)
-        {
-            throw new DomainValidationException("Action item description cannot exceed 4000 characters.");
-        }
-
-        return new ActionItem(meetingId, meetingSummaryId, title.Trim(), string.IsNullOrWhiteSpace(description) ? null : description.Trim(), assigneeUserId, dueAtUtc, createdAtUtc);
+        return new ActionItem(ActionItemSourceType.Meeting, meetingId, meetingSummaryId, null, null, title.Trim(), string.IsNullOrWhiteSpace(description) ? null : description.Trim(), assigneeUserId, null, ActionItemPriority.Medium, dueAtUtc, createdAtUtc);
     }
 
-    public void Update(string title, string? description, Guid? assigneeUserId, DateTimeOffset? dueAtUtc, ActionItemStatus status, DateTimeOffset updatedAtUtc)
+    public static ActionItem CreateFromMessage(Guid sourceMessageId, Guid? projectId, string title, string? description, Guid? assigneeUserId, Guid? reviewerUserId, ActionItemPriority priority, DateTimeOffset? dueAtUtc, DateTimeOffset createdAtUtc)
+    {
+        if (sourceMessageId == Guid.Empty)
+        {
+            throw new DomainValidationException("A source message is required for a message-based action item.");
+        }
+
+        ValidateCommon(title, description);
+
+        return new ActionItem(ActionItemSourceType.Message, null, null, sourceMessageId, projectId, title.Trim(), string.IsNullOrWhiteSpace(description) ? null : description.Trim(), assigneeUserId, reviewerUserId, priority, dueAtUtc, createdAtUtc);
+    }
+
+    private static void ValidateCommon(string title, string? description)
     {
         if (string.IsNullOrWhiteSpace(title) || title.Trim().Length > 400)
         {
@@ -293,6 +319,11 @@ public sealed class ActionItem
         {
             throw new DomainValidationException("Action item description cannot exceed 4000 characters.");
         }
+    }
+
+    public void Update(string title, string? description, Guid? assigneeUserId, DateTimeOffset? dueAtUtc, ActionItemStatus status, DateTimeOffset updatedAtUtc)
+    {
+        ValidateCommon(title, description);
 
         Title = title.Trim();
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
@@ -301,4 +332,30 @@ public sealed class ActionItem
         Status = status;
         UpdatedAtUtc = updatedAtUtc;
     }
+}
+
+public sealed class ActionItemHistory
+{
+    private ActionItemHistory()
+    {
+    }
+
+    public ActionItemHistory(Guid actionItemId, Guid changedByUserId, ActionItemStatus oldStatus, ActionItemStatus newStatus, string? comment, DateTimeOffset changedAtUtc)
+    {
+        Id = Guid.NewGuid();
+        ActionItemId = actionItemId;
+        ChangedByUserId = changedByUserId;
+        OldStatus = oldStatus;
+        NewStatus = newStatus;
+        Comment = string.IsNullOrWhiteSpace(comment) ? null : comment.Trim();
+        ChangedAtUtc = changedAtUtc;
+    }
+
+    public Guid Id { get; private set; }
+    public Guid ActionItemId { get; private set; }
+    public Guid ChangedByUserId { get; private set; }
+    public ActionItemStatus OldStatus { get; private set; }
+    public ActionItemStatus NewStatus { get; private set; }
+    public string? Comment { get; private set; }
+    public DateTimeOffset ChangedAtUtc { get; private set; }
 }

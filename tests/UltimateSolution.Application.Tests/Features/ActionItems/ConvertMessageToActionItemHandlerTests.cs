@@ -1,0 +1,119 @@
+#pragma warning disable CA1707
+#pragma warning disable CA2201
+#pragma warning disable CA1822
+#pragma warning disable CA1852
+using Microsoft.EntityFrameworkCore;
+using UltimateSolution.Application.Common.Results;
+using UltimateSolution.Application.Features.ActionItems.Commands.ConvertMessageToActionItem;
+using UltimateSolution.Application.Interfaces;
+using UltimateSolution.Domain.Entities.Chat;
+using UltimateSolution.Domain.Entities.Projects;
+using UltimateSolution.Domain.Enums;
+using UltimateSolution.Domain.Entities.Meetings;
+
+namespace UltimateSolution.Application.Tests.Features.ActionItems;
+
+public class ConvertMessageToActionItemHandlerTests
+{
+    private sealed class TestChatMessageRepository : IChatMessageRepository
+    {
+        public ChatMessage? Message { get; set; }
+        public Task<ChatMessage?> GetByIdAsync(Guid messageId, CancellationToken cancellationToken = default) => Task.FromResult(Message);
+        public Task<IReadOnlyList<ChatMessage>> GetForChannelAsync(Guid channelId, string? searchTerm, int take, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ChatMessage>>(new List<ChatMessage>());
+        public void Add(ChatMessage message) { }
+    }
+
+    private sealed class TestChatChannelRepository : IChatChannelRepository
+    {
+        public ChatChannel? Channel { get; set; }
+        public Task<ChatChannel?> GetByIdAsync(Guid channelId, CancellationToken cancellationToken = default) => Task.FromResult(Channel);
+        public Task<IReadOnlyList<ChatChannel>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ChatChannel>>(new List<ChatChannel>());
+        public void Add(ChatChannel channel) { }
+        public void Update(ChatChannel channel) { }
+        public Task<ChatChannel?> GetDirectChannelAsync(Guid user1Id, Guid user2Id, CancellationToken cancellationToken = default) => Task.FromResult<ChatChannel?>(null);
+        public Task<ChannelMember?> GetMembershipAsync(Guid channelId, Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<ChannelMember?>(null);
+        public Task<MessageReadState?> GetReadStateAsync(Guid channelId, Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<MessageReadState?>(null);
+        public void AddReadState(MessageReadState readState) { }
+    }
+
+    private sealed class TestActionItemRepository : IActionItemRepository
+    {
+        public Task<ActionItem?> GetByIdAsync(Guid actionItemId, CancellationToken cancellationToken = default) => Task.FromResult<ActionItem?>(null);
+        public Task<IReadOnlyList<ActionItem>> GetForUserAsync(Guid userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ActionItem>>(new List<ActionItem>());
+        public Task<bool> ExistsForSourceMessageAsync(Guid messageId, CancellationToken cancellationToken = default) => Task.FromResult(false);
+        public void Add(ActionItem actionItem) { }
+        public void AddRange(IEnumerable<ActionItem> actionItems) { }
+    }
+
+    private sealed class TestActionItemAuthorizationService : IActionItemAuthorizationService
+    {
+        public Task<bool> CanConvertMessageToActionItemAsync(Guid userId, ChatMessage message, CancellationToken cancellationToken = default) => Task.FromResult(true);
+    }
+
+    private sealed class TestOutboundNotificationService : IOutboundNotificationService
+    {
+        public Task<Result> SendAsync(OutboundNotificationRequest request, CancellationToken cancellationToken = default) => Task.FromResult(Result.Success());
+    }
+
+    private sealed class TestProjectRepository : IProjectRepository
+    {
+        public Task<Project?> GetByIdAsync(Guid projectId, CancellationToken cancellationToken = default) => Task.FromResult<Project?>(null);
+        public Task<IReadOnlyList<ProjectMember>> GetMembersAsync(Guid projectId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<ProjectMember>>(new List<ProjectMember>());
+    }
+
+    private sealed class TestUnitOfWork : IUnitOfWork
+    {
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            throw new Exception("DbUpdateException") { Source = "Test" };
+        }
+    }
+
+    [Fact]
+    // Explicitly a Unit Test simulating EF Core DbUpdateException handling (Not a real PostgreSQL Integration Test)
+    public async Task Handle_WhenConcurrencyExceptionSimulated_ShouldCatchExceptionAndReturnConflict()
+    {
+        // Arrange
+        var messageRepository = new TestChatMessageRepository();
+        var channelRepository = new TestChatChannelRepository();
+        var actionItemRepository = new TestActionItemRepository();
+        var authorizationService = new TestActionItemAuthorizationService();
+        var notificationService = new TestOutboundNotificationService();
+        var projectRepository = new TestProjectRepository();
+
+        // Create an IUnitOfWork that throws a simulated DbUpdateException using the real EF Core exception class
+        var unitOfWork = new FakeFailingUnitOfWork();
+
+        var handler = new ConvertMessageToActionItemHandler(
+            messageRepository,
+            channelRepository,
+            actionItemRepository,
+            authorizationService,
+            notificationService,
+            projectRepository,
+            unitOfWork
+        );
+
+        var request = new ConvertMessageToActionItemCommand(Guid.NewGuid(), Guid.NewGuid(), "Task", Guid.NewGuid(), ActionItemPriority.Medium, null);
+        messageRepository.Message = ChatMessage.Create(Guid.NewGuid(), request.UserId, "Hello", DateTimeOffset.UtcNow);
+        channelRepository.Channel = ChatChannel.Create(ChatChannelType.Group, "Channel", Guid.NewGuid(), DateTimeOffset.UtcNow);
+
+        // Act
+        var result = await handler.Handle(request, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("ActionItem.AlreadyConverted", result.ErrorCode);
+    }
+
+    private sealed class FakeFailingUnitOfWork : IUnitOfWork
+    {
+        public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            var innerEx = new Exception("IX_ActionItems_SourceMessageId");
+            // Use the real DbUpdateException from EF Core
+            throw new Microsoft.EntityFrameworkCore.DbUpdateException("DB Error", innerEx);
+        }
+    }
+}
+
